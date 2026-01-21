@@ -797,10 +797,13 @@
         <div class="scenario-panel">
             <h3>🎬 Automated Simulation Scenarios</h3>
             <div class="scenario-description">
-                <strong>Recommended Configuration for Balanced Prioritization:</strong><br>
-                • Diamond: Base 0, +10 per 10s | Gold: Base 0, +9 per 10s<br>
-                • Yellow: Base 0, +8 per 10s | Standard: Base 0, +7 per 10s<br>
-                <em>This creates a 30% advantage for Diamond over Standard while preventing starvation.</em>
+                <strong>🎯 Balanced Prioritization Demo (Queue 1 Focus)</strong><br>
+                Watch a realistic scenario where:<br>
+                • <strong>Standard customers arrive first</strong> (0-20s) and build up wait time<br>
+                • <strong>Diamond customers arrive late</strong> (40s+) but should still get priority<br>
+                • <strong>All 22 customers go to Q1</strong> for easy visualization<br>
+                • <strong>Recommended settings:</strong> Diamond +10, Gold +9, Yellow +8, Standard +7<br>
+                <em>Goal: Diamonds prioritized without starving Standards!</em>
             </div>
             <div class="scenario-buttons">
                 <button id="applyBalancedConfig" class="success">✅ Apply Balanced Config</button>
@@ -1349,7 +1352,7 @@
             document.getElementById('standardIncrease').value = 7;
 
             applyConfiguration();
-            alert('✅ Balanced configuration applied!\n\nDiamond: +10/10s, Gold: +9/10s, Yellow: +8/10s, Standard: +7/10s\n\nThis creates a 30% priority advantage for Diamond while preventing starvation.');
+            alert('✅ Balanced configuration applied!\n\nDiamond: +10/10s, Gold: +9/10s, Yellow: +8/10s, Standard: +7/10s\n\nThis creates a 30% priority advantage for Diamond while preventing starvation.\n\nNow run the scenario to see all 22 customers added to Queue 1!');
         }
 
         function runBalancedScenario() {
@@ -1374,39 +1377,41 @@
             document.getElementById('runBalancedScenario').style.display = 'none';
             document.getElementById('stopScenarioBtn').style.display = 'inline-block';
 
-            // Define scenario timeline (time in seconds, tier, queue)
+            // Define scenario timeline - ALL customers go to Q1 for focused demonstration
             scenarioSteps = [
                 // Phase 1: Standard customers arrive first (0-20s)
-                { time: 0, tier: 'Standard', queue: 'Q1', message: 'Standard customer #1 arrives' },
-                { time: 5, tier: 'Standard', queue: 'Q1', message: 'Standard customer #2 arrives' },
-                { time: 10, tier: 'Standard', queue: 'Q2', message: 'Standard customer #3 arrives' },
-                { time: 15, tier: 'Yellow', queue: 'Q1', message: 'Yellow customer arrives' },
+                { time: 0, tier: 'Standard', queue: 'Q1', message: 'Q1: Standard customer #1 arrives (early arrival)' },
+                { time: 5, tier: 'Standard', queue: 'Q1', message: 'Q1: Standard customer #2 arrives' },
+                { time: 10, tier: 'Standard', queue: 'Q1', message: 'Q1: Standard customer #3 arrives' },
+                { time: 15, tier: 'Yellow', queue: 'Q1', message: 'Q1: Yellow customer #1 arrives' },
+                { time: 18, tier: 'Standard', queue: 'Q1', message: 'Q1: Standard customer #4 arrives' },
 
-                // Phase 2: Mix of tiers (20-40s)
-                { time: 20, tier: 'Gold', queue: 'Q1', message: 'Gold customer arrives' },
-                { time: 25, tier: 'Standard', queue: 'Q2', message: 'Standard customer #4 arrives' },
-                { time: 30, tier: 'Yellow', queue: 'Q2', message: 'Yellow customer #2 arrives' },
+                // Phase 2: Gold tier arrives (20-35s)
+                { time: 22, tier: 'Gold', queue: 'Q1', message: 'Q1: Gold customer #1 arrives' },
+                { time: 28, tier: 'Standard', queue: 'Q1', message: 'Q1: Standard customer #5 arrives' },
+                { time: 32, tier: 'Yellow', queue: 'Q1', message: 'Q1: Yellow customer #2 arrives' },
+                { time: 35, tier: 'Gold', queue: 'Q1', message: 'Q1: Gold customer #2 arrives' },
 
-                // Phase 3: Diamond customers arrive (40-60s) - they arrive LATE but should still get priority
-                { time: 40, tier: 'Diamond', queue: 'Q1', message: 'Diamond customer #1 arrives (late arrival)' },
-                { time: 45, tier: 'Standard', queue: 'Q1', message: 'Standard customer #5 arrives' },
-                { time: 50, tier: 'Diamond', queue: 'Q2', message: 'Diamond customer #2 arrives (late arrival)' },
+                // Phase 3: Diamond customers arrive LATE (40-55s) - they arrive late but should still get priority!
+                { time: 40, tier: 'Diamond', queue: 'Q1', message: 'Q1: 💎 Diamond customer #1 arrives (late but VIP!)' },
+                { time: 45, tier: 'Standard', queue: 'Q1', message: 'Q1: Standard customer #6 arrives' },
+                { time: 48, tier: 'Diamond', queue: 'Q1', message: 'Q1: 💎 Diamond customer #2 arrives (late but VIP!)' },
+                { time: 52, tier: 'Yellow', queue: 'Q1', message: 'Q1: Yellow customer #3 arrives' },
+                { time: 55, tier: 'Diamond', queue: 'Q1', message: 'Q1: 💎 Diamond customer #3 arrives (late but VIP!)' },
 
-                // Phase 4: More mix to show balance (60-80s)
-                { time: 55, tier: 'Gold', queue: 'Q2', message: 'Gold customer #2 arrives' },
-                { time: 60, tier: 'Standard', queue: 'Q1', message: 'Standard customer #6 arrives' },
-                { time: 65, tier: 'Yellow', queue: 'Q1', message: 'Yellow customer #3 arrives' },
-                { time: 70, tier: 'Diamond', queue: 'Q1', message: 'Diamond customer #3 arrives' },
-                { time: 75, tier: 'Standard', queue: 'Q2', message: 'Standard customer #7 arrives' },
+                // Phase 4: Continued mix (60-75s)
+                { time: 60, tier: 'Standard', queue: 'Q1', message: 'Q1: Standard customer #7 arrives' },
+                { time: 65, tier: 'Gold', queue: 'Q1', message: 'Q1: Gold customer #3 arrives' },
+                { time: 70, tier: 'Yellow', queue: 'Q1', message: 'Q1: Yellow customer #4 arrives' },
+                { time: 72, tier: 'Standard', queue: 'Q1', message: 'Q1: Standard customer #8 arrives' },
 
-                // Phase 5: Final wave (80-100s)
-                { time: 80, tier: 'Gold', queue: 'Q1', message: 'Gold customer #3 arrives' },
-                { time: 85, tier: 'Standard', queue: 'Q1', message: 'Standard customer #8 arrives' },
-                { time: 90, tier: 'Diamond', queue: 'Q2', message: 'Diamond customer #4 arrives' },
-                { time: 95, tier: 'Yellow', queue: 'Q2', message: 'Yellow customer #4 arrives' },
+                // Phase 5: Final late Diamond to stress test (80-90s)
+                { time: 80, tier: 'Diamond', queue: 'Q1', message: 'Q1: 💎 Diamond customer #4 arrives (very late!)' },
+                { time: 85, tier: 'Standard', queue: 'Q1', message: 'Q1: Standard customer #9 arrives' },
+                { time: 88, tier: 'Gold', queue: 'Q1', message: 'Q1: Gold customer #4 arrives' },
 
                 // End scenario
-                { time: 120, tier: null, queue: null, message: 'Scenario complete! Review results above.' }
+                { time: 95, tier: null, queue: null, message: '✅ Scenario complete! All 22 customers added to Q1. Watch the queue and wait 60s more, then click "Stop & Show Summary".' }
             ];
 
             executeScenarioStep(0);
@@ -1444,7 +1449,7 @@
         function completeScenario() {
             scenarioRunning = false;
             document.getElementById('progressFill').style.width = '100%';
-            document.getElementById('scenarioStatus').innerHTML = '<strong>✅ Scenario Complete!</strong> Let simulation run for 60 more seconds, then click "Stop & Show Summary" to analyze results.';
+            document.getElementById('scenarioStatus').innerHTML = '<strong>✅ Scenario Complete!</strong> 22 customers added to Queue 1. Watch them get served (auto-assignment every 15s). Wait 60-90 seconds, then click "Stop & Show Summary" to analyze: Did Diamonds get priority? Were Standards starved?';
             document.getElementById('runBalancedScenario').style.display = 'inline-block';
             document.getElementById('stopScenarioBtn').style.display = 'none';
         }
