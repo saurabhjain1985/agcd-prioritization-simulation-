@@ -756,6 +756,10 @@
                     <label>Time Interval (seconds)</label>
                     <input type="number" id="timeInterval" value="10" min="1" max="300">
                 </div>
+                <div class="config-group">
+                    <label>Agent Assignment Interval (seconds)</label>
+                    <input type="number" id="assignmentInterval" value="10" min="1" max="60">
+                </div>
 
                 <div class="config-divider"></div>
 
@@ -819,8 +823,8 @@
                 <strong>Config Guide:</strong><br>
                 • <strong>Strong Priority (15,11,7,5):</strong> 3x Diamond advantage - Maximum showcase of power<br>
                 • <strong>Option A (15,11,9,8):</strong> 1.875x Diamond advantage - Diamond ~48-50% faster, zero starvation (Recommended)<br>
-                • <strong>Custom Config:</strong> Set your own values in the Configuration Settings above, then click "Apply Custom Config"<br>
-                • <strong>Agent Assignment:</strong> Every 10 seconds for faster processing and lower wait times
+                • <strong>Custom Config:</strong> Set your own values in Configuration Settings (including Agent Assignment Interval), then click "Apply Custom Config"<br>
+                • <strong>Agent Assignment:</strong> Now configurable! Lower values (5s) = faster processing, higher values (15s) = more realistic waits
             </div>
             <div class="scenario-progress" id="scenarioProgress">
                 <div id="scenarioStatus">Preparing simulation...</div>
@@ -857,7 +861,7 @@
         </div>
 
         <div class="agent-assignment" id="agentAssignment">
-            🤖 Auto-assigning top customers to agents every 10 seconds...
+            🤖 Auto-assigning top customers to agents every <span id="assignmentIntervalDisplay">10</span> seconds...
         </div>
 
         <div class="stats-panel">
@@ -938,14 +942,14 @@
             <div style="margin-top: 15px; padding: 15px; background: #ecfdf5; border-radius: 5px; border-left: 4px solid #10b981;">
                 <strong style="color: #059669;">🛡️ Configuration Strategy:</strong>
                 <div style="margin-top: 8px; font-size: 13px; color: #065f46;">
-                    <strong>Default: Option A (Recommended) - 15, 11, 9, 8</strong><br>
+                    <strong>Default: Option A (Recommended) - 15, 11, 9, 8 @ 10s assignment</strong><br>
                     • <strong>All tiers start equal</strong> (Base: 0) - Fair starting point<br>
                     • <strong>Diamond gets 1.875x faster growth</strong> (+15 per 10s vs Standard +8 per 10s)<br>
                     • <strong>Clear tier separation</strong> - Demonstrates VIP priority effectively<br>
-                    • <strong>Agent assignment every 10 seconds</strong> - Faster processing, lower wait times<br>
+                    • <strong>Agent assignment configurable</strong> - Default 10s. Try 5s for faster service, 15s for realistic waits<br>
                     • <strong>Zero starvation</strong> - Eliminates critical wait times across all tiers<br>
                     • <strong>Key Balance:</strong> Diamond waiting 30s = 45 priority. Standard waiting 56s = 45 priority. Diamond gets ~48-50% faster service while Standards don't starve.<br>
-                    • <strong>Custom Values:</strong> You can manually adjust values in Configuration Settings and apply them!
+                    • <strong>Custom Values:</strong> Adjust score increments AND assignment interval in Configuration Settings!
                 </div>
             </div>
         </div>
@@ -1003,6 +1007,7 @@
         let scenarioRunning = false;
         let scenarioTimeout = null;
         let scenarioSteps = [];
+        let AGENT_ASSIGNMENT_INTERVAL = 10; // seconds - configurable
 
         // Initialize with sample conversations
         function initializeConversations() {
@@ -1355,6 +1360,7 @@
         function applyBalancedConfiguration() {
             // Apply strong priority configuration (original)
             document.getElementById('timeInterval').value = 10;
+            document.getElementById('assignmentInterval').value = 10;
             document.getElementById('diamondBase').value = 0;
             document.getElementById('diamondIncrease').value = 15;
             document.getElementById('goldBase').value = 0;
@@ -1365,12 +1371,13 @@
             document.getElementById('standardIncrease').value = 5;
 
             applyConfiguration();
-            alert('✅ Strong Priority Config Applied!\n\nDiamond: +15/10s, Gold: +11/10s, Yellow: +7/10s, Standard: +5/10s\n\n3x Diamond advantage (15 vs 5)\n• Maximum showcase of Diamond priority power\n• Diamond ~57% faster than Standard\n• May have some lower tier starvation\n\nRun the scenario to test!');
+            alert('✅ Strong Priority Config Applied!\n\nDiamond: +15/10s, Gold: +11/10s, Yellow: +7/10s, Standard: +5/10s\nAgent Assignment: Every 10 seconds\n\n3x Diamond advantage (15 vs 5)\n• Maximum showcase of Diamond priority power\n• Diamond ~57% faster than Standard\n• May have some lower tier starvation\n\nRun the scenario to test!');
         }
 
         function applyOptionA() {
             // Apply Option A configuration - optimal Diamond priority with zero starvation
             document.getElementById('timeInterval').value = 10;
+            document.getElementById('assignmentInterval').value = 10;
             document.getElementById('diamondBase').value = 0;
             document.getElementById('diamondIncrease').value = 15;
             document.getElementById('goldBase').value = 0;
@@ -1381,7 +1388,7 @@
             document.getElementById('standardIncrease').value = 8;
 
             applyConfiguration();
-            alert('✅ Option A Config Applied! (Recommended)\n\nDiamond: +15/10s, Gold: +11/10s, Yellow: +9/10s, Standard: +8/10s\n\n1.875x Diamond advantage (15 vs 8)\n• Diamond ~48-50% faster than Standard\n• Agent assignment every 10 seconds\n• Zero critical starvation across all tiers\n• Optimal balance of power showcase + fairness\n\nRun the scenario to test!');
+            alert('✅ Option A Config Applied! (Recommended)\n\nDiamond: +15/10s, Gold: +11/10s, Yellow: +9/10s, Standard: +8/10s\nAgent Assignment: Every 10 seconds\n\n1.875x Diamond advantage (15 vs 8)\n• Diamond ~48-50% faster than Standard\n• Zero critical starvation across all tiers\n• Optimal balance of power showcase + fairness\n\nRun the scenario to test!');
         }
 
         function applyCustomConfiguration() {
@@ -1393,8 +1400,9 @@
             const yellowInc = document.getElementById('yellowIncrease').value;
             const standardInc = document.getElementById('standardIncrease').value;
             const interval = document.getElementById('timeInterval').value;
+            const assignmentInt = document.getElementById('assignmentInterval').value;
 
-            alert(`✅ Custom Configuration Applied!\n\nDiamond: +${diamondInc}/${interval}s\nGold: +${goldInc}/${interval}s\nYellow: +${yellowInc}/${interval}s\nStandard: +${standardInc}/${interval}s\n\nYour custom settings are now active.\n\nRun the scenario to test your configuration!`);
+            alert(`✅ Custom Configuration Applied!\n\nDiamond: +${diamondInc}/${interval}s\nGold: +${goldInc}/${interval}s\nYellow: +${yellowInc}/${interval}s\nStandard: +${standardInc}/${interval}s\nAgent Assignment: Every ${assignmentInt} seconds\n\nYour custom settings are now active.\n\nRun the scenario to test your configuration!`);
         }
 
         function runBalancedScenario() {
@@ -1491,7 +1499,7 @@
         function completeScenario() {
             scenarioRunning = false;
             document.getElementById('progressFill').style.width = '100%';
-            document.getElementById('scenarioStatus').innerHTML = '<strong>✅ Scenario Complete!</strong> 22 customers added to Queue 1. Watch them get served (auto-assignment every 10s). Wait 60-90 seconds, then click "Stop & Show Summary" to analyze: Did Diamonds get priority? Were Standards starved?';
+            document.getElementById('scenarioStatus').innerHTML = `<strong>✅ Scenario Complete!</strong> 22 customers added to Queue 1. Watch them get served (auto-assignment every ${AGENT_ASSIGNMENT_INTERVAL}s). Wait 60-90 seconds, then click "Stop & Show Summary" to analyze: Did Diamonds get priority? Were Standards starved?`;
             document.getElementById('runBalancedScenario').style.display = 'inline-block';
             document.getElementById('stopScenarioBtn').style.display = 'none';
         }
@@ -1582,6 +1590,21 @@
         function applyConfiguration() {
             // Update time interval
             TIME_INTERVAL = parseInt(document.getElementById('timeInterval').value) || 10;
+
+            // Update agent assignment interval
+            const newAssignmentInterval = parseInt(document.getElementById('assignmentInterval').value) || 10;
+            if (newAssignmentInterval !== AGENT_ASSIGNMENT_INTERVAL) {
+                AGENT_ASSIGNMENT_INTERVAL = newAssignmentInterval;
+
+                // Update display
+                document.getElementById('assignmentIntervalDisplay').textContent = AGENT_ASSIGNMENT_INTERVAL;
+
+                // Restart the assignment interval with new timing
+                if (agentAssignmentInterval) {
+                    clearInterval(agentAssignmentInterval);
+                    agentAssignmentInterval = setInterval(assignToAgent, AGENT_ASSIGNMENT_INTERVAL * 1000);
+                }
+            }
 
             // Update tier configurations
             TIER_CONFIG.Diamond.basePriority = parseInt(document.getElementById('diamondBase').value);
@@ -1707,7 +1730,7 @@
         initializeConversations();
         updateLegend();
         simulationInterval = setInterval(updateConversations, 1000);
-        agentAssignmentInterval = setInterval(assignToAgent, 10000); // Assign customers every 10 seconds
+        agentAssignmentInterval = setInterval(assignToAgent, AGENT_ASSIGNMENT_INTERVAL * 1000); // Assign customers using configurable interval
     </script>
 </body>
 </html>
