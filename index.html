@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGCD Dynamic Prioritization - Dynamics 365</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .controls button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            transition: background 0.3s;
+        }
+
+        .controls button:hover {
+            background: #5568d3;
+        }
+
+        .controls button.pause {
+            background: #f59e0b;
+        }
+
+        .controls button.pause:hover {
+            background: #d97706;
+        }
+
+        .config-panel {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .config-panel h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .config-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .config-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .config-group input {
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .config-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .config-divider {
+            grid-column: 1 / -1;
+            height: 1px;
+            background: #e5e7eb;
+            margin: 10px 0;
+        }
+
+        .fifo-badge {
+            background: #8b5cf6;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+
+        .queue.fifo {
+            border: 2px solid #8b5cf6;
+        }
+
+        .fifo-position {
+            font-size: 20px;
+            font-weight: bold;
+            color: #8b5cf6;
+        }
+
+        .wait-time-warning {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            animation: warningPulse 2s infinite;
+        }
+
+        .wait-time-critical {
+            background: #fee2e2;
+            border: 2px solid #ef4444;
+            animation: criticalPulse 1s infinite;
+        }
+
+        @keyframes warningPulse {
+            0%, 100% {
+                border-color: #f59e0b;
+            }
+            50% {
+                border-color: #fbbf24;
+            }
+        }
+
+        @keyframes criticalPulse {
+            0%, 100% {
+                border-color: #ef4444;
+            }
+            50% {
+                border-color: #f87171;
+            }
+        }
+
+        .starvation-indicator {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .starvation-indicator.warning {
+            background: #fbbf24;
+            color: #78350f;
+        }
+
+        .starvation-indicator.critical {
+            background: #ef4444;
+            color: white;
+        }
+
+        .stats-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .stats-panel h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ddd;
+        }
+
+        .stat-card.diamond {
+            border-left-color: #3b82f6;
+        }
+
+        .stat-card.gold {
+            border-left-color: #f59e0b;
+        }
+
+        .stat-card.yellow {
+            border-left-color: #eab308;
+        }
+
+        .stat-card.standard {
+            border-left-color: #6b7280;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-subtext {
+            font-size: 11px;
+            color: #999;
+            margin-top: 3px;
+        }
+
+        .add-customer-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .add-customer-panel h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .add-customer-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .add-customer-controls select {
+            padding: 10px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 5px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .add-customer-controls select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .controls button.danger {
+            background: #ef4444;
+        }
+
+        .controls button.danger:hover {
+            background: #dc2626;
+        }
+
+        .queue-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .queue {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .queue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .queue-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .queue-count {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .conversation {
+            background: #f9fafb;
+            border-left: 4px solid #ddd;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .conversation.diamond {
+            border-left-color: #3b82f6;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        }
+
+        .conversation.gold {
+            border-left-color: #f59e0b;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        }
+
+        .conversation.yellow {
+            border-left-color: #eab308;
+            background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+        }
+
+        .conversation.standard {
+            border-left-color: #6b7280;
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+        }
+
+        .conversation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .customer-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .customer-name {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .tier-badge {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .tier-badge.diamond {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .tier-badge.gold {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .tier-badge.yellow {
+            background: #eab308;
+            color: white;
+        }
+
+        .tier-badge.standard {
+            background: #6b7280;
+            color: white;
+        }
+
+        .priority-score {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .conversation-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 3px;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .legend {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .legend h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f9fafb;
+            border-radius: 5px;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+        }
+
+        .legend-color.diamond {
+            background: #3b82f6;
+        }
+
+        .legend-color.gold {
+            background: #f59e0b;
+        }
+
+        .legend-color.yellow {
+            background: #eab308;
+        }
+
+        .legend-color.standard {
+            background: #6b7280;
+        }
+
+        .legend-text {
+            flex: 1;
+        }
+
+        .legend-title {
+            font-weight: bold;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .legend-desc {
+            font-size: 12px;
+            color: #666;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .conversation.updated {
+            animation: pulse 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AGCD Dynamic Prioritization System</h1>
+            <p>Real-time conversation prioritization using Natural Language Powered Agentic Conversation Distribution for Dynamics 365</p>
+        </div>
+
+        <div class="config-panel">
+            <h3>⚙️ Configuration Settings</h3>
+            <div class="config-grid">
+                <div class="config-group">
+                    <label>Time Interval (seconds)</label>
+                    <input type="number" id="timeInterval" value="10" min="1" max="300">
+                </div>
+
+                <div class="config-divider"></div>
+
+                <div class="config-group">
+                    <label>Diamond Base Priority</label>
+                    <input type="number" id="diamondBase" value="20" min="0" step="1">
+                </div>
+                <div class="config-group">
+                    <label>Diamond Score Increase</label>
+                    <input type="number" id="diamondIncrease" value="12" min="0" step="1">
+                </div>
+
+                <div class="config-group">
+                    <label>Gold Base Priority</label>
+                    <input type="number" id="goldBase" value="10" min="0" step="1">
+                </div>
+                <div class="config-group">
+                    <label>Gold Score Increase</label>
+                    <input type="number" id="goldIncrease" value="10" min="0" step="1">
+                </div>
+
+                <div class="config-group">
+                    <label>Yellow Base Priority</label>
+                    <input type="number" id="yellowBase" value="5" min="0" step="1">
+                </div>
+                <div class="config-group">
+                    <label>Yellow Score Increase</label>
+                    <input type="number" id="yellowIncrease" value="8" min="0" step="1">
+                </div>
+
+                <div class="config-group">
+                    <label>Standard Base Priority</label>
+                    <input type="number" id="standardBase" value="0" min="0" step="1">
+                </div>
+                <div class="config-group">
+                    <label>Standard Score Increase</label>
+                    <input type="number" id="standardIncrease" value="6" min="0" step="1">
+                </div>
+            </div>
+        </div>
+
+        <div class="add-customer-panel">
+            <h3>➕ Add Customer to Queue</h3>
+            <div class="add-customer-controls">
+                <select id="selectQueue">
+                    <option value="Q1">Queue 1 (Q1) - Priority</option>
+                    <option value="Q2">Queue 2 (Q2) - Priority</option>
+                    <option value="Q3">Queue 3 (Q3) - FIFO</option>
+                </select>
+                <select id="selectTier">
+                    <option value="Diamond">Diamond Tier</option>
+                    <option value="Gold">Gold Tier</option>
+                    <option value="Yellow">Yellow Tier</option>
+                    <option value="Standard">Standard Tier</option>
+                </select>
+                <button id="addCustomerBtn">➕ Add Customer</button>
+                <button id="addRandomBtn">🎲 Add Random</button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="pauseBtn" class="pause">⏸️ Pause Simulation</button>
+            <button id="clearAllBtn" class="danger">🗑️ Clear All Queues</button>
+            <button id="resetBtn">🔄 Reset with Sample Data</button>
+            <button id="applyConfigBtn">✅ Apply Configuration</button>
+        </div>
+
+        <div class="stats-panel">
+            <h3>📊 Queue Statistics & Starvation Prevention</h3>
+            <div class="stats-grid" id="statsGrid">
+                <!-- Stats will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="queue-container">
+            <div class="queue" id="q1">
+                <div class="queue-header">
+                    <span class="queue-title">Queue 1 (Q1)</span>
+                    <span class="queue-count">0 waiting</span>
+                </div>
+                <div class="queue-content" id="q1-content"></div>
+            </div>
+
+            <div class="queue" id="q2">
+                <div class="queue-header">
+                    <span class="queue-title">Queue 2 (Q2)</span>
+                    <span class="queue-count">0 waiting</span>
+                </div>
+                <div class="queue-content" id="q2-content"></div>
+            </div>
+
+            <div class="queue fifo" id="q3">
+                <div class="queue-header">
+                    <div>
+                        <span class="queue-title">Queue 3 (Q3)</span>
+                        <span class="fifo-badge">FIFO</span>
+                    </div>
+                    <span class="queue-count">0 waiting</span>
+                </div>
+                <div class="queue-content" id="q3-content"></div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3>Prioritization Logic</h3>
+            <div class="legend-grid" id="legendGrid">
+                <div class="legend-item">
+                    <div class="legend-color diamond"></div>
+                    <div class="legend-text">
+                        <div class="legend-title">Diamond Tier</div>
+                        <div class="legend-desc">+1000 points per 30s</div>
+                    </div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color gold"></div>
+                    <div class="legend-text">
+                        <div class="legend-title">Gold Tier</div>
+                        <div class="legend-desc">+900 points per 30s</div>
+                    </div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color yellow"></div>
+                    <div class="legend-text">
+                        <div class="legend-title">Yellow Tier</div>
+                        <div class="legend-desc">+800 points per 30s</div>
+                    </div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color standard"></div>
+                    <div class="legend-text">
+                        <div class="legend-title">Standard Tier</div>
+                        <div class="legend-desc">+400 points per 30s</div>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 20px; padding: 15px; background: #f3f4f6; border-radius: 5px; border-left: 4px solid #8b5cf6;">
+                <strong style="color: #8b5cf6;">Queue Logic:</strong>
+                <div style="margin-top: 8px; font-size: 14px; color: #666;">
+                    • <strong>Q1 & Q2:</strong> Priority-based routing - Highest priority score served first<br>
+                    • <strong>Q3:</strong> FIFO (First In First Out) - Customers served in arrival order
+                </div>
+            </div>
+            <div style="margin-top: 15px; padding: 15px; background: #ecfdf5; border-radius: 5px; border-left: 4px solid #10b981;">
+                <strong style="color: #059669;">🛡️ Starvation Prevention:</strong>
+                <div style="margin-top: 8px; font-size: 13px; color: #065f46;">
+                    Current settings balance priority with fairness:<br>
+                    • <strong>Diamond customers get a head start</strong> (Base: 20) but don't dominate completely<br>
+                    • <strong>Lower tier increments are higher</strong> (Standard: +6 vs Diamond: +12) so they catch up over time<br>
+                    • <strong>Warning at 60s, Critical at 120s</strong> - Visual alerts prevent starvation<br>
+                    • Example: A Standard customer waiting 2 minutes will have priority 72, beating a new Diamond at 20!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Customer tier configuration - Balanced to prevent starvation
+        let TIER_CONFIG = {
+            'Diamond': { multiplier: 12, basePriority: 20, class: 'diamond' },
+            'Gold': { multiplier: 10, basePriority: 10, class: 'gold' },
+            'Yellow': { multiplier: 8, basePriority: 5, class: 'yellow' },
+            'Standard': { multiplier: 6, basePriority: 0, class: 'standard' }
+        };
+
+        let TIME_INTERVAL = 10; // seconds
+
+        // Starvation thresholds (in seconds)
+        const WAIT_TIME_WARNING = 60; // Show warning after 60 seconds
+        const WAIT_TIME_CRITICAL = 120; // Show critical alert after 120 seconds
+
+        const CUSTOMER_NAMES = [
+            'Sarah Johnson', 'Michael Chen', 'Emily Rodriguez', 'David Kim',
+            'Jessica Taylor', 'Christopher Lee', 'Amanda Martinez', 'Daniel Brown',
+            'Lisa Anderson', 'James Wilson', 'Maria Garcia', 'Robert Thompson'
+        ];
+
+        const CONVERSATION_SUBJECTS = [
+            'Billing inquiry', 'Technical support', 'Account update', 'Product information',
+            'Service complaint', 'Feature request', 'Password reset', 'Order status',
+            'Refund request', 'Subscription change'
+        ];
+
+        let conversations = [];
+        let conversationIdCounter = 1;
+        let isPaused = false;
+        let simulationInterval;
+
+        // Initialize with sample conversations
+        function initializeConversations() {
+            const queues = ['Q1', 'Q2', 'Q3'];
+            const tiers = ['Diamond', 'Gold', 'Yellow', 'Standard'];
+
+            // Add 2-3 conversations per queue
+            for (let i = 0; i < 8; i++) {
+                addConversation(
+                    queues[Math.floor(Math.random() * queues.length)],
+                    tiers[Math.floor(Math.random() * tiers.length)]
+                );
+            }
+        }
+
+        function addConversation(queue, tier = null) {
+            if (!tier) {
+                const tiers = ['Diamond', 'Gold', 'Yellow', 'Standard'];
+                tier = tiers[Math.floor(Math.random() * tiers.length)];
+            }
+
+            const tierConfig = TIER_CONFIG[tier];
+            const conversation = {
+                id: conversationIdCounter++,
+                customerName: CUSTOMER_NAMES[Math.floor(Math.random() * CUSTOMER_NAMES.length)],
+                subject: CONVERSATION_SUBJECTS[Math.floor(Math.random() * CONVERSATION_SUBJECTS.length)],
+                tier: tier,
+                queue: queue,
+                waitTime: Math.floor(Math.random() * 120), // Random initial wait time 0-120s
+                priorityScore: tierConfig.basePriority, // Base priority from config
+                startTime: Date.now(),
+                arrivalOrder: conversationIdCounter - 1 // For FIFO
+            };
+
+            conversations.push(conversation);
+            renderQueues();
+        }
+
+        function calculatePriorityScore(conversation) {
+            const tierConfig = TIER_CONFIG[conversation.tier];
+            const waitTimeIntervals = Math.floor(conversation.waitTime / TIME_INTERVAL);
+            return tierConfig.basePriority + (waitTimeIntervals * tierConfig.multiplier);
+        }
+
+        function updateConversations() {
+            if (isPaused) return;
+
+            conversations.forEach(conv => {
+                conv.waitTime += 1; // Increase wait time by 1 second
+
+                // Only update priority score for non-FIFO queues
+                if (conv.queue !== 'Q3') {
+                    conv.priorityScore = calculatePriorityScore(conv);
+                }
+            });
+
+            renderQueues();
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function calculateStatistics() {
+            const stats = {
+                'Diamond': { count: 0, totalWait: 0, maxWait: 0, atRisk: 0 },
+                'Gold': { count: 0, totalWait: 0, maxWait: 0, atRisk: 0 },
+                'Yellow': { count: 0, totalWait: 0, maxWait: 0, atRisk: 0 },
+                'Standard': { count: 0, totalWait: 0, maxWait: 0, atRisk: 0 }
+            };
+
+            conversations.forEach(conv => {
+                const tierStats = stats[conv.tier];
+                tierStats.count++;
+                tierStats.totalWait += conv.waitTime;
+                tierStats.maxWait = Math.max(tierStats.maxWait, conv.waitTime);
+
+                if (conv.waitTime >= WAIT_TIME_CRITICAL) {
+                    tierStats.atRisk++;
+                }
+            });
+
+            return stats;
+        }
+
+        function updateStatistics() {
+            const stats = calculateStatistics();
+            const statsGrid = document.getElementById('statsGrid');
+
+            statsGrid.innerHTML = Object.keys(TIER_CONFIG).map(tier => {
+                const tierStats = stats[tier];
+                const tierConfig = TIER_CONFIG[tier];
+                const avgWait = tierStats.count > 0 ? Math.round(tierStats.totalWait / tierStats.count) : 0;
+
+                let riskIndicator = '';
+                if (tierStats.atRisk > 0) {
+                    riskIndicator = `<div style="color: #ef4444; font-size: 11px; margin-top: 5px; font-weight: bold;">⚠️ ${tierStats.atRisk} at starvation risk!</div>`;
+                }
+
+                return `
+                    <div class="stat-card ${tierConfig.class}">
+                        <div class="stat-label">${tier} Tier</div>
+                        <div class="stat-value">${tierStats.count}</div>
+                        <div class="stat-subtext">Waiting in queues</div>
+                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e5e7eb;">
+                            <div style="font-size: 12px; color: #666;">Avg Wait: <strong>${formatTime(avgWait)}</strong></div>
+                            <div style="font-size: 12px; color: #666;">Max Wait: <strong>${formatTime(tierStats.maxWait)}</strong></div>
+                        </div>
+                        ${riskIndicator}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getStarvationClass(waitTime) {
+            if (waitTime >= WAIT_TIME_CRITICAL) {
+                return 'wait-time-critical';
+            } else if (waitTime >= WAIT_TIME_WARNING) {
+                return 'wait-time-warning';
+            }
+            return '';
+        }
+
+        function getStarvationIndicator(waitTime) {
+            if (waitTime >= WAIT_TIME_CRITICAL) {
+                return '<span class="starvation-indicator critical">CRITICAL</span>';
+            } else if (waitTime >= WAIT_TIME_WARNING) {
+                return '<span class="starvation-indicator warning">AT RISK</span>';
+            }
+            return '';
+        }
+
+        function renderQueues() {
+            const queues = { Q1: [], Q2: [], Q3: [] };
+
+            // Group conversations by queue
+            conversations.forEach(conv => {
+                if (queues[conv.queue]) {
+                    queues[conv.queue].push(conv);
+                }
+            });
+
+            // Sort Q1 and Q2 by priority (highest first), Q3 by FIFO (earliest first)
+            queues.Q1.sort((a, b) => b.priorityScore - a.priorityScore);
+            queues.Q2.sort((a, b) => b.priorityScore - a.priorityScore);
+            queues.Q3.sort((a, b) => a.arrivalOrder - b.arrivalOrder);
+
+            // Render each queue
+            Object.keys(queues).forEach(queueName => {
+                const queueContent = document.getElementById(`${queueName.toLowerCase()}-content`);
+                const queueConversations = queues[queueName];
+                const isFifo = queueName === 'Q3';
+
+                // Update count
+                const queueElement = document.getElementById(queueName.toLowerCase());
+                const countElement = queueElement.querySelector('.queue-count');
+                countElement.textContent = `${queueConversations.length} waiting`;
+
+                // Render conversations
+                queueContent.innerHTML = queueConversations.map((conv, index) => {
+                    const tierConfig = TIER_CONFIG[conv.tier];
+                    const starvationClass = getStarvationClass(conv.waitTime);
+                    const starvationIndicator = getStarvationIndicator(conv.waitTime);
+
+                    return `
+                        <div class="conversation ${tierConfig.class} ${starvationClass}" data-id="${conv.id}">
+                            <div class="conversation-header">
+                                <div class="customer-info">
+                                    <span class="customer-name">${conv.customerName}</span>
+                                    <span class="tier-badge ${tierConfig.class}">${conv.tier}</span>
+                                    ${starvationIndicator}
+                                </div>
+                                ${isFifo
+                                    ? `<span class="fifo-position">#${index + 1}</span>`
+                                    : `<span class="priority-score">${conv.priorityScore}</span>`
+                                }
+                            </div>
+                            <div class="conversation-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">Subject</span>
+                                    <span class="detail-value">${conv.subject}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Wait Time</span>
+                                    <span class="detail-value">${formatTime(conv.waitTime)}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Queue</span>
+                                    <span class="detail-value">${conv.queue}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">${isFifo ? 'Queue Logic' : 'Priority Increment'}</span>
+                                    <span class="detail-value">${isFifo ? 'First In First Out' : `+${tierConfig.multiplier}/${TIME_INTERVAL}s`}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            });
+
+            // Update statistics
+            updateStatistics();
+        }
+
+        function applyConfiguration() {
+            // Update time interval
+            TIME_INTERVAL = parseInt(document.getElementById('timeInterval').value) || 10;
+
+            // Update tier configurations
+            TIER_CONFIG.Diamond.basePriority = parseInt(document.getElementById('diamondBase').value) || 20;
+            TIER_CONFIG.Diamond.multiplier = parseInt(document.getElementById('diamondIncrease').value) || 12;
+
+            TIER_CONFIG.Gold.basePriority = parseInt(document.getElementById('goldBase').value) || 10;
+            TIER_CONFIG.Gold.multiplier = parseInt(document.getElementById('goldIncrease').value) || 10;
+
+            TIER_CONFIG.Yellow.basePriority = parseInt(document.getElementById('yellowBase').value) || 5;
+            TIER_CONFIG.Yellow.multiplier = parseInt(document.getElementById('yellowIncrease').value) || 8;
+
+            TIER_CONFIG.Standard.basePriority = parseInt(document.getElementById('standardBase').value) || 0;
+            TIER_CONFIG.Standard.multiplier = parseInt(document.getElementById('standardIncrease').value) || 6;
+
+            // Recalculate all priority scores
+            conversations.forEach(conv => {
+                if (conv.queue !== 'Q3') {
+                    conv.priorityScore = calculatePriorityScore(conv);
+                }
+            });
+
+            // Update legend
+            updateLegend();
+            renderQueues();
+        }
+
+        function updateLegend() {
+            const legendItems = [
+                { tier: 'Diamond', config: TIER_CONFIG.Diamond },
+                { tier: 'Gold', config: TIER_CONFIG.Gold },
+                { tier: 'Yellow', config: TIER_CONFIG.Yellow },
+                { tier: 'Standard', config: TIER_CONFIG.Standard }
+            ];
+
+            const legendGrid = document.getElementById('legendGrid');
+            legendGrid.innerHTML = legendItems.map(item => `
+                <div class="legend-item">
+                    <div class="legend-color ${item.config.class}"></div>
+                    <div class="legend-text">
+                        <div class="legend-title">${item.tier} Tier</div>
+                        <div class="legend-desc">+${item.config.multiplier} points per ${TIME_INTERVAL}s</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Event handlers
+        document.getElementById('pauseBtn').addEventListener('click', function() {
+            isPaused = !isPaused;
+            this.textContent = isPaused ? '▶️ Resume Simulation' : '⏸️ Pause Simulation';
+            this.style.background = isPaused ? '#10b981' : '#f59e0b';
+        });
+
+        document.getElementById('addCustomerBtn').addEventListener('click', function() {
+            const selectedQueue = document.getElementById('selectQueue').value;
+            const selectedTier = document.getElementById('selectTier').value;
+            addConversation(selectedQueue, selectedTier);
+        });
+
+        document.getElementById('addRandomBtn').addEventListener('click', function() {
+            const queues = ['Q1', 'Q2', 'Q3'];
+            const tiers = ['Diamond', 'Gold', 'Yellow', 'Standard'];
+            const randomQueue = queues[Math.floor(Math.random() * queues.length)];
+            const randomTier = tiers[Math.floor(Math.random() * tiers.length)];
+            addConversation(randomQueue, randomTier);
+        });
+
+        document.getElementById('clearAllBtn').addEventListener('click', function() {
+            if (confirm('Are you sure you want to clear all conversations from all queues?')) {
+                conversations = [];
+                renderQueues();
+            }
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            conversations = [];
+            conversationIdCounter = 1;
+            initializeConversations();
+        });
+
+        document.getElementById('applyConfigBtn').addEventListener('click', function() {
+            applyConfiguration();
+        });
+
+        // Start simulation
+        initializeConversations();
+        updateLegend();
+        simulationInterval = setInterval(updateConversations, 1000);
+    </script>
+</body>
+</html>
