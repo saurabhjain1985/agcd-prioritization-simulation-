@@ -300,6 +300,162 @@
             background: #dc2626;
         }
 
+        .controls button.success {
+            background: #10b981;
+        }
+
+        .controls button.success:hover {
+            background: #059669;
+        }
+
+        .summary-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .summary-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .summary-content {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .summary-header h2 {
+            color: #333;
+            font-size: 24px;
+        }
+
+        .close-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .close-btn:hover {
+            background: #dc2626;
+        }
+
+        .summary-section {
+            margin-bottom: 25px;
+        }
+
+        .summary-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric-box {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .metric-subtext {
+            font-size: 11px;
+            color: #999;
+            margin-top: 3px;
+        }
+
+        .tier-analysis {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .tier-analysis-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .tier-analysis-title {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .tier-analysis-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .served-indicator {
+            background: #10b981;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .agent-assignment {
+            background: #e0e7ff;
+            border: 2px dashed #667eea;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #667eea;
+            font-weight: bold;
+        }
+
         .queue-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -598,9 +754,14 @@
 
         <div class="controls">
             <button id="pauseBtn" class="pause">⏸️ Pause Simulation</button>
+            <button id="stopSimulationBtn" class="danger">⏹️ Stop & Show Summary</button>
             <button id="clearAllBtn" class="danger">🗑️ Clear All Queues</button>
             <button id="resetBtn">🔄 Reset with Sample Data</button>
             <button id="applyConfigBtn">✅ Apply Configuration</button>
+        </div>
+
+        <div class="agent-assignment" id="agentAssignment">
+            🤖 Auto-assigning top customers to agents every 15 seconds...
         </div>
 
         <div class="stats-panel">
@@ -692,6 +853,19 @@
         </div>
     </div>
 
+    <!-- Summary Modal -->
+    <div class="summary-modal" id="summaryModal">
+        <div class="summary-content">
+            <div class="summary-header">
+                <h2>📊 Simulation Summary Report</h2>
+                <button class="close-btn" id="closeSummaryBtn">Close</button>
+            </div>
+            <div id="summaryBody">
+                <!-- Summary content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
     <script>
         // Customer tier configuration - Balanced to prevent starvation
         let TIER_CONFIG = {
@@ -723,6 +897,10 @@
         let conversationIdCounter = 1;
         let isPaused = false;
         let simulationInterval;
+        let agentAssignmentInterval;
+        let servedCustomers = [];
+        let simulationStartTime = Date.now();
+        let totalCustomersAdded = 0;
 
         // Initialize with sample conversations
         function initializeConversations() {
@@ -755,11 +933,56 @@
                 waitTime: isInitialLoad ? Math.floor(Math.random() * 120) : 0, // Start at 0 for new customers, random for initial load
                 priorityScore: tierConfig.basePriority, // Base priority from config
                 startTime: Date.now(),
-                arrivalOrder: conversationIdCounter - 1 // For FIFO
+                arrivalOrder: conversationIdCounter - 1, // For FIFO
+                addedAt: Date.now()
             };
 
             conversations.push(conversation);
+            totalCustomersAdded++;
             renderQueues();
+        }
+
+        function assignToAgent() {
+            if (isPaused || conversations.length === 0) return;
+
+            const queues = { Q1: [], Q2: [], Q3: [] };
+
+            // Group conversations by queue
+            conversations.forEach(conv => {
+                if (queues[conv.queue]) {
+                    queues[conv.queue].push(conv);
+                }
+            });
+
+            // Sort and get top customer from each queue
+            queues.Q1.sort((a, b) => b.priorityScore - a.priorityScore);
+            queues.Q2.sort((a, b) => b.priorityScore - a.priorityScore);
+            queues.Q3.sort((a, b) => a.arrivalOrder - b.arrivalOrder);
+
+            let assignedCount = 0;
+
+            // Assign top customer from each queue if available
+            ['Q1', 'Q2', 'Q3'].forEach(queueName => {
+                if (queues[queueName].length > 0) {
+                    const topCustomer = queues[queueName][0];
+
+                    // Record served customer
+                    servedCustomers.push({
+                        ...topCustomer,
+                        servedAt: Date.now(),
+                        totalWaitTime: topCustomer.waitTime,
+                        queuePosition: conversations.filter(c => c.queue === queueName).indexOf(topCustomer) + 1
+                    });
+
+                    // Remove from queue
+                    conversations = conversations.filter(c => c.id !== topCustomer.id);
+                    assignedCount++;
+                }
+            });
+
+            if (assignedCount > 0) {
+                renderQueues();
+            }
         }
 
         function calculatePriorityScore(conversation) {
@@ -856,6 +1079,175 @@
                 return '<span class="starvation-indicator warning">AT RISK</span>';
             }
             return '';
+        }
+
+        function generateSummary() {
+            const simulationDuration = Math.floor((Date.now() - simulationStartTime) / 1000);
+
+            // Calculate tier statistics
+            const tierStats = {
+                'Diamond': { served: 0, totalWait: 0, maxWait: 0, minWait: Infinity, starved: 0 },
+                'Gold': { served: 0, totalWait: 0, maxWait: 0, minWait: Infinity, starved: 0 },
+                'Yellow': { served: 0, totalWait: 0, maxWait: 0, minWait: Infinity, starved: 0 },
+                'Standard': { served: 0, totalWait: 0, maxWait: 0, minWait: Infinity, starved: 0 }
+            };
+
+            servedCustomers.forEach(customer => {
+                const stats = tierStats[customer.tier];
+                stats.served++;
+                stats.totalWait += customer.totalWaitTime;
+                stats.maxWait = Math.max(stats.maxWait, customer.totalWaitTime);
+                stats.minWait = Math.min(stats.minWait, customer.totalWaitTime);
+
+                if (customer.totalWaitTime >= WAIT_TIME_CRITICAL) {
+                    stats.starved++;
+                }
+            });
+
+            // Calculate average service order by tier
+            const tierServiceOrder = {};
+            servedCustomers.forEach((customer, index) => {
+                if (!tierServiceOrder[customer.tier]) {
+                    tierServiceOrder[customer.tier] = [];
+                }
+                tierServiceOrder[customer.tier].push(index + 1);
+            });
+
+            // Generate HTML
+            let html = `
+                <div class="summary-section">
+                    <h3>⏱️ Simulation Overview</h3>
+                    <div class="metrics-grid">
+                        <div class="metric-box">
+                            <div class="metric-label">Duration</div>
+                            <div class="metric-value">${formatTime(simulationDuration)}</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">Customers Added</div>
+                            <div class="metric-value">${totalCustomersAdded}</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">Customers Served</div>
+                            <div class="metric-value">${servedCustomers.length}</div>
+                            <div class="metric-subtext">${Math.round((servedCustomers.length / totalCustomersAdded) * 100)}% completion rate</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">Still Waiting</div>
+                            <div class="metric-value">${conversations.length}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="summary-section">
+                    <h3>🎯 Performance by Tier</h3>
+            `;
+
+            // Add tier analysis
+            Object.keys(TIER_CONFIG).forEach(tier => {
+                const stats = tierStats[tier];
+                const avgWait = stats.served > 0 ? Math.round(stats.totalWait / stats.served) : 0;
+                const tierConfig = TIER_CONFIG[tier];
+                const avgServiceOrder = tierServiceOrder[tier]
+                    ? Math.round(tierServiceOrder[tier].reduce((a, b) => a + b, 0) / tierServiceOrder[tier].length)
+                    : 0;
+
+                const starvationRate = stats.served > 0 ? Math.round((stats.starved / stats.served) * 100) : 0;
+                const starvationStatus = starvationRate === 0
+                    ? '✅ No starvation'
+                    : starvationRate < 20
+                        ? '⚠️ Low starvation'
+                        : '🚨 High starvation';
+
+                html += `
+                    <div class="tier-analysis" style="border-left: 4px solid ${tier === 'Diamond' ? '#3b82f6' : tier === 'Gold' ? '#f59e0b' : tier === 'Yellow' ? '#eab308' : '#6b7280'}">
+                        <div class="tier-analysis-header">
+                            <span class="tier-analysis-title">${tier} Tier</span>
+                            <span style="color: #666; font-size: 14px;">${stats.served} served</span>
+                        </div>
+                        <div class="tier-analysis-stats">
+                            <div>
+                                <strong>Avg Wait:</strong><br>${formatTime(avgWait)}
+                            </div>
+                            <div>
+                                <strong>Service Order:</strong><br>#${avgServiceOrder} avg position
+                            </div>
+                            <div>
+                                <strong>Starvation:</strong><br>${starvationStatus}
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                            Max wait: ${formatTime(stats.maxWait === 0 ? 0 : stats.maxWait)} |
+                            Min wait: ${formatTime(stats.minWait === Infinity ? 0 : stats.minWait)}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+
+            // Add insights
+            const diamondStats = tierStats['Diamond'];
+            const goldStats = tierStats['Gold'];
+            const standardStats = tierStats['Standard'];
+            const yellowStats = tierStats['Yellow'];
+
+            const diamondAvg = diamondStats.served > 0 ? Math.round(diamondStats.totalWait / diamondStats.served) : 0;
+            const standardAvg = standardStats.served > 0 ? Math.round(standardStats.totalWait / standardStats.served) : 0;
+
+            html += `
+                <div class="summary-section">
+                    <h3>💡 Key Insights</h3>
+                    <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                        <strong style="color: #1e40af;">Priority Performance:</strong>
+                        <ul style="margin-top: 10px; color: #1e3a8a; line-height: 1.8;">
+                            ${diamondStats.served > 0 && standardStats.served > 0 && diamondAvg < standardAvg
+                                ? `<li>✅ Diamond customers waited ${Math.round(((standardAvg - diamondAvg) / standardAvg) * 100)}% less time than Standard customers</li>`
+                                : '<li>⚠️ Diamond priority advantage not clearly demonstrated</li>'
+                            }
+                            ${goldStats.served > 0 && standardStats.served > 0 && goldStats.totalWait / goldStats.served < standardStats.totalWait / standardStats.served
+                                ? '<li>✅ Gold customers received priority treatment</li>'
+                                : '<li>ℹ️ Gold tier performance similar to others</li>'
+                            }
+                        </ul>
+                    </div>
+                    <div style="background: #ecfdf5; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; margin-top: 15px;">
+                        <strong style="color: #065f46;">Starvation Prevention:</strong>
+                        <ul style="margin-top: 10px; color: #065f46; line-height: 1.8;">
+                            ${standardStats.starved === 0
+                                ? '<li>✅ No Standard tier customers experienced critical wait times</li>'
+                                : `<li>⚠️ ${standardStats.starved} Standard customers experienced critical wait times</li>`
+                            }
+                            ${yellowStats.starved === 0
+                                ? '<li>✅ No Yellow tier customers experienced critical wait times</li>'
+                                : `<li>⚠️ ${yellowStats.starved} Yellow customers experienced critical wait times</li>`
+                            }
+                            ${(standardStats.starved + yellowStats.starved) === 0
+                                ? '<li>✅ Excellent starvation prevention - all lower tiers served timely</li>'
+                                : '<li>💡 Consider adjusting score increments to reduce lower tier wait times</li>'
+                            }
+                        </ul>
+                    </div>
+                </div>
+            `;
+
+            return html;
+        }
+
+        function showSummary() {
+            const summaryBody = document.getElementById('summaryBody');
+            summaryBody.innerHTML = generateSummary();
+            document.getElementById('summaryModal').classList.add('active');
+        }
+
+        function closeSummary() {
+            document.getElementById('summaryModal').classList.remove('active');
+        }
+
+        function stopSimulation() {
+            isPaused = true;
+            clearInterval(simulationInterval);
+            clearInterval(agentAssignmentInterval);
+            showSummary();
         }
 
         function renderQueues() {
@@ -1005,8 +1397,11 @@
         });
 
         document.getElementById('clearAllBtn').addEventListener('click', function() {
-            if (confirm('Are you sure you want to clear all conversations from all queues?')) {
+            if (confirm('Are you sure you want to clear all conversations from all queues? This will also reset simulation tracking.')) {
                 conversations = [];
+                servedCustomers = [];
+                simulationStartTime = Date.now();
+                totalCustomersAdded = 0;
                 renderQueues();
             }
         });
@@ -1014,6 +1409,12 @@
         document.getElementById('resetBtn').addEventListener('click', function() {
             conversations = [];
             conversationIdCounter = 1;
+            servedCustomers = [];
+            simulationStartTime = Date.now();
+            totalCustomersAdded = 0;
+            isPaused = false;
+            document.getElementById('pauseBtn').textContent = '⏸️ Pause Simulation';
+            document.getElementById('pauseBtn').style.background = '#f59e0b';
             initializeConversations();
         });
 
@@ -1021,10 +1422,19 @@
             applyConfiguration();
         });
 
+        document.getElementById('stopSimulationBtn').addEventListener('click', function() {
+            stopSimulation();
+        });
+
+        document.getElementById('closeSummaryBtn').addEventListener('click', function() {
+            closeSummary();
+        });
+
         // Start simulation
         initializeConversations();
         updateLegend();
         simulationInterval = setInterval(updateConversations, 1000);
+        agentAssignmentInterval = setInterval(assignToAgent, 15000); // Assign customers every 15 seconds
     </script>
 </body>
 </html>
