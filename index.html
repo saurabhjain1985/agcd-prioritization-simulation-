@@ -762,7 +762,7 @@
                 </div>
                 <div class="config-group">
                     <label>Diamond Score Increase</label>
-                    <input type="number" id="diamondIncrease" value="10" min="0" step="1">
+                    <input type="number" id="diamondIncrease" value="15" min="0" step="1">
                 </div>
 
                 <div class="config-group">
@@ -771,7 +771,7 @@
                 </div>
                 <div class="config-group">
                     <label>Gold Score Increase</label>
-                    <input type="number" id="goldIncrease" value="9" min="0" step="1">
+                    <input type="number" id="goldIncrease" value="11" min="0" step="1">
                 </div>
 
                 <div class="config-group">
@@ -780,7 +780,7 @@
                 </div>
                 <div class="config-group">
                     <label>Yellow Score Increase</label>
-                    <input type="number" id="yellowIncrease" value="8" min="0" step="1">
+                    <input type="number" id="yellowIncrease" value="7" min="0" step="1">
                 </div>
 
                 <div class="config-group">
@@ -789,7 +789,7 @@
                 </div>
                 <div class="config-group">
                     <label>Standard Score Increase</label>
-                    <input type="number" id="standardIncrease" value="7" min="0" step="1">
+                    <input type="number" id="standardIncrease" value="5" min="0" step="1">
                 </div>
             </div>
         </div>
@@ -797,13 +797,13 @@
         <div class="scenario-panel">
             <h3>🎬 Automated Simulation Scenarios</h3>
             <div class="scenario-description">
-                <strong>🎯 Balanced Prioritization Demo (Queue 1 Focus)</strong><br>
+                <strong>🎯 Clear Differentiation Demo (Queue 1 Focus)</strong><br>
                 Watch a realistic scenario where:<br>
                 • <strong>Standard customers arrive first</strong> (0-20s) and build up wait time<br>
                 • <strong>Diamond customers arrive late</strong> (40s+) but should still get priority<br>
                 • <strong>All 22 customers go to Q1</strong> for easy visualization<br>
-                • <strong>Recommended settings:</strong> Diamond +10, Gold +9, Yellow +8, Standard +7<br>
-                <em>Goal: Diamonds prioritized without starving Standards!</em>
+                • <strong>Optimized settings:</strong> Diamond +15, Gold +11, Yellow +7, Standard +5 (3x advantage!)<br>
+                <em>Goal: Clearly showcase Diamond priority power while preventing total starvation!</em>
             </div>
             <div class="scenario-buttons">
                 <button id="applyBalancedConfig" class="success">✅ Apply Balanced Config</button>
@@ -925,14 +925,14 @@
                 </div>
             </div>
             <div style="margin-top: 15px; padding: 15px; background: #ecfdf5; border-radius: 5px; border-left: 4px solid #10b981;">
-                <strong style="color: #059669;">🛡️ Balanced Prioritization Strategy:</strong>
+                <strong style="color: #059669;">🛡️ Clear Differentiation Strategy:</strong>
                 <div style="margin-top: 8px; font-size: 13px; color: #065f46;">
-                    Current settings (Recommended):<br>
+                    Current settings (Optimized for showcasing power):<br>
                     • <strong>All tiers start equal</strong> (Base: 0) - Fair starting point<br>
-                    • <strong>Diamond gets 30% faster growth</strong> (+10 per 10s vs Standard +7 per 10s)<br>
-                    • <strong>Gradual tier differences</strong> - Each tier is competitive with the next<br>
+                    • <strong>Diamond gets 3x faster growth</strong> (+15 per 10s vs Standard +5 per 10s)<br>
+                    • <strong>Clear tier separation</strong> - Demonstrates VIP priority effectively<br>
                     • <strong>Warning at 60s, Critical at 120s</strong> - Visual alerts prevent starvation<br>
-                    • <strong>Key Balance:</strong> Diamond waiting 30s = 30 priority. Standard waiting 43s = 30 priority. Standards catch up in 43% more time (not 2x or 3x), ensuring no starvation while respecting VIP status.
+                    • <strong>Key Balance:</strong> Diamond waiting 30s = 45 priority. Standard waiting 90s = 45 priority. Standards need 3x time to catch up, clearly showing Diamond advantage while still preventing total starvation.
                 </div>
             </div>
         </div>
@@ -952,13 +952,13 @@
     </div>
 
     <script>
-        // Customer tier configuration - Balanced to prevent starvation
-        // 30% advantage for Diamond (10 vs 7) while preventing starvation
+        // Customer tier configuration - Clear differentiation showcasing Diamond priority
+        // 3x advantage for Diamond (15 vs 5) - demonstrates power while preventing total starvation
         let TIER_CONFIG = {
-            'Diamond': { multiplier: 10, basePriority: 0, class: 'diamond' },
-            'Gold': { multiplier: 9, basePriority: 0, class: 'gold' },
-            'Yellow': { multiplier: 8, basePriority: 0, class: 'yellow' },
-            'Standard': { multiplier: 7, basePriority: 0, class: 'standard' }
+            'Diamond': { multiplier: 15, basePriority: 0, class: 'diamond' },
+            'Gold': { multiplier: 11, basePriority: 0, class: 'gold' },
+            'Yellow': { multiplier: 7, basePriority: 0, class: 'yellow' },
+            'Standard': { multiplier: 5, basePriority: 0, class: 'standard' }
         };
 
         let TIME_INTERVAL = 10; // seconds
@@ -1340,19 +1340,19 @@
         }
 
         function applyBalancedConfiguration() {
-            // Apply optimal balanced configuration
+            // Apply optimal configuration for clear differentiation
             document.getElementById('timeInterval').value = 10;
             document.getElementById('diamondBase').value = 0;
-            document.getElementById('diamondIncrease').value = 10;
+            document.getElementById('diamondIncrease').value = 15;
             document.getElementById('goldBase').value = 0;
-            document.getElementById('goldIncrease').value = 9;
+            document.getElementById('goldIncrease').value = 11;
             document.getElementById('yellowBase').value = 0;
-            document.getElementById('yellowIncrease').value = 8;
+            document.getElementById('yellowIncrease').value = 7;
             document.getElementById('standardBase').value = 0;
-            document.getElementById('standardIncrease').value = 7;
+            document.getElementById('standardIncrease').value = 5;
 
             applyConfiguration();
-            alert('✅ Balanced configuration applied!\n\nDiamond: +10/10s, Gold: +9/10s, Yellow: +8/10s, Standard: +7/10s\n\nThis creates a 30% priority advantage for Diamond while preventing starvation.\n\nNow run the scenario to see all 22 customers added to Queue 1!');
+            alert('✅ Optimized configuration applied!\n\nDiamond: +15/10s, Gold: +11/10s, Yellow: +7/10s, Standard: +5/10s\n\nThis creates a 3x priority advantage for Diamond (15 vs 5) while preventing total starvation.\n\nNow run the scenario to see all 22 customers added to Queue 1!');
         }
 
         function runBalancedScenario() {
@@ -1544,19 +1544,19 @@
             // Update tier configurations
             TIER_CONFIG.Diamond.basePriority = parseInt(document.getElementById('diamondBase').value);
             if (isNaN(TIER_CONFIG.Diamond.basePriority)) TIER_CONFIG.Diamond.basePriority = 0;
-            TIER_CONFIG.Diamond.multiplier = parseInt(document.getElementById('diamondIncrease').value) || 10;
+            TIER_CONFIG.Diamond.multiplier = parseInt(document.getElementById('diamondIncrease').value) || 15;
 
             TIER_CONFIG.Gold.basePriority = parseInt(document.getElementById('goldBase').value);
             if (isNaN(TIER_CONFIG.Gold.basePriority)) TIER_CONFIG.Gold.basePriority = 0;
-            TIER_CONFIG.Gold.multiplier = parseInt(document.getElementById('goldIncrease').value) || 9;
+            TIER_CONFIG.Gold.multiplier = parseInt(document.getElementById('goldIncrease').value) || 11;
 
             TIER_CONFIG.Yellow.basePriority = parseInt(document.getElementById('yellowBase').value);
             if (isNaN(TIER_CONFIG.Yellow.basePriority)) TIER_CONFIG.Yellow.basePriority = 0;
-            TIER_CONFIG.Yellow.multiplier = parseInt(document.getElementById('yellowIncrease').value) || 8;
+            TIER_CONFIG.Yellow.multiplier = parseInt(document.getElementById('yellowIncrease').value) || 7;
 
             TIER_CONFIG.Standard.basePriority = parseInt(document.getElementById('standardBase').value);
             if (isNaN(TIER_CONFIG.Standard.basePriority)) TIER_CONFIG.Standard.basePriority = 0;
-            TIER_CONFIG.Standard.multiplier = parseInt(document.getElementById('standardIncrease').value) || 7;
+            TIER_CONFIG.Standard.multiplier = parseInt(document.getElementById('standardIncrease').value) || 5;
 
             // Recalculate all priority scores
             conversations.forEach(conv => {
