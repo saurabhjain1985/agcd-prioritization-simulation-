@@ -805,7 +805,8 @@
                 • <strong>Standard customers arrive first</strong> (0-20s) and build up wait time<br>
                 • <strong>Diamond customers arrive late</strong> (40s+) but should still get priority<br>
                 • <strong>All 22 customers go to Q1</strong> for easy visualization<br>
-                <em>Goal: Showcase Diamond priority power while minimizing starvation!</em>
+                <em>Goal: Showcase Diamond priority power while minimizing starvation!</em><br>
+                <strong style="color: #f59e0b;">⚠️ First select a config below, then click Run Simulation!</strong>
             </div>
             <div class="scenario-buttons">
                 <button id="applyBalancedConfig" class="success">✅ Config: Strong Priority (15,11,7,5)</button>
@@ -1410,8 +1411,8 @@
             document.getElementById('pauseBtn').style.background = '#f59e0b';
             renderQueues();
 
-            // Apply balanced config
-            applyBalancedConfiguration();
+            // Use whatever configuration is currently set (don't override it)
+            // This allows users to run with Option A, Strong Priority, or Custom config
 
             scenarioRunning = true;
             document.getElementById('scenarioProgress').classList.add('active');
