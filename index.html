@@ -541,7 +541,7 @@
 
                 <div class="config-group">
                     <label>Diamond Base Priority</label>
-                    <input type="number" id="diamondBase" value="20" min="0" step="1">
+                    <input type="number" id="diamondBase" value="0" min="0" step="1">
                 </div>
                 <div class="config-group">
                     <label>Diamond Score Increase</label>
@@ -550,7 +550,7 @@
 
                 <div class="config-group">
                     <label>Gold Base Priority</label>
-                    <input type="number" id="goldBase" value="10" min="0" step="1">
+                    <input type="number" id="goldBase" value="0" min="0" step="1">
                 </div>
                 <div class="config-group">
                     <label>Gold Score Increase</label>
@@ -559,7 +559,7 @@
 
                 <div class="config-group">
                     <label>Yellow Base Priority</label>
-                    <input type="number" id="yellowBase" value="5" min="0" step="1">
+                    <input type="number" id="yellowBase" value="0" min="0" step="1">
                 </div>
                 <div class="config-group">
                     <label>Yellow Score Increase</label>
@@ -682,10 +682,11 @@
                 <strong style="color: #059669;">🛡️ Starvation Prevention:</strong>
                 <div style="margin-top: 8px; font-size: 13px; color: #065f46;">
                     Current settings balance priority with fairness:<br>
-                    • <strong>Diamond customers get a head start</strong> (Base: 20) but don't dominate completely<br>
-                    • <strong>Lower tier increments are higher</strong> (Standard: +6 vs Diamond: +12) so they catch up over time<br>
+                    • <strong>All tiers start equal</strong> (Base: 0) - No initial advantage<br>
+                    • <strong>Diamond gets faster priority growth</strong> (+12 per 10s vs Standard +6 per 10s)<br>
+                    • <strong>Lower tiers catch up over time</strong> - Longer wait = higher priority<br>
                     • <strong>Warning at 60s, Critical at 120s</strong> - Visual alerts prevent starvation<br>
-                    • Example: A Standard customer waiting 2 minutes will have priority 72, beating a new Diamond at 20!
+                    • Example: Diamond waiting 30s = 36 priority. Standard waiting 60s = 36 priority (equal!). Standard waiting longer will surpass Diamond.
                 </div>
             </div>
         </div>
@@ -694,9 +695,9 @@
     <script>
         // Customer tier configuration - Balanced to prevent starvation
         let TIER_CONFIG = {
-            'Diamond': { multiplier: 12, basePriority: 20, class: 'diamond' },
-            'Gold': { multiplier: 10, basePriority: 10, class: 'gold' },
-            'Yellow': { multiplier: 8, basePriority: 5, class: 'yellow' },
+            'Diamond': { multiplier: 12, basePriority: 0, class: 'diamond' },
+            'Gold': { multiplier: 10, basePriority: 0, class: 'gold' },
+            'Yellow': { multiplier: 8, basePriority: 0, class: 'yellow' },
             'Standard': { multiplier: 6, basePriority: 0, class: 'standard' }
         };
 
@@ -732,12 +733,13 @@
             for (let i = 0; i < 8; i++) {
                 addConversation(
                     queues[Math.floor(Math.random() * queues.length)],
-                    tiers[Math.floor(Math.random() * tiers.length)]
+                    tiers[Math.floor(Math.random() * tiers.length)],
+                    true // isInitialLoad = true for sample data
                 );
             }
         }
 
-        function addConversation(queue, tier = null) {
+        function addConversation(queue, tier = null, isInitialLoad = false) {
             if (!tier) {
                 const tiers = ['Diamond', 'Gold', 'Yellow', 'Standard'];
                 tier = tiers[Math.floor(Math.random() * tiers.length)];
@@ -750,7 +752,7 @@
                 subject: CONVERSATION_SUBJECTS[Math.floor(Math.random() * CONVERSATION_SUBJECTS.length)],
                 tier: tier,
                 queue: queue,
-                waitTime: Math.floor(Math.random() * 120), // Random initial wait time 0-120s
+                waitTime: isInitialLoad ? Math.floor(Math.random() * 120) : 0, // Start at 0 for new customers, random for initial load
                 priorityScore: tierConfig.basePriority, // Base priority from config
                 startTime: Date.now(),
                 arrivalOrder: conversationIdCounter - 1 // For FIFO
@@ -933,16 +935,20 @@
             TIME_INTERVAL = parseInt(document.getElementById('timeInterval').value) || 10;
 
             // Update tier configurations
-            TIER_CONFIG.Diamond.basePriority = parseInt(document.getElementById('diamondBase').value) || 20;
+            TIER_CONFIG.Diamond.basePriority = parseInt(document.getElementById('diamondBase').value);
+            if (isNaN(TIER_CONFIG.Diamond.basePriority)) TIER_CONFIG.Diamond.basePriority = 0;
             TIER_CONFIG.Diamond.multiplier = parseInt(document.getElementById('diamondIncrease').value) || 12;
 
-            TIER_CONFIG.Gold.basePriority = parseInt(document.getElementById('goldBase').value) || 10;
+            TIER_CONFIG.Gold.basePriority = parseInt(document.getElementById('goldBase').value);
+            if (isNaN(TIER_CONFIG.Gold.basePriority)) TIER_CONFIG.Gold.basePriority = 0;
             TIER_CONFIG.Gold.multiplier = parseInt(document.getElementById('goldIncrease').value) || 10;
 
-            TIER_CONFIG.Yellow.basePriority = parseInt(document.getElementById('yellowBase').value) || 5;
+            TIER_CONFIG.Yellow.basePriority = parseInt(document.getElementById('yellowBase').value);
+            if (isNaN(TIER_CONFIG.Yellow.basePriority)) TIER_CONFIG.Yellow.basePriority = 0;
             TIER_CONFIG.Yellow.multiplier = parseInt(document.getElementById('yellowIncrease').value) || 8;
 
-            TIER_CONFIG.Standard.basePriority = parseInt(document.getElementById('standardBase').value) || 0;
+            TIER_CONFIG.Standard.basePriority = parseInt(document.getElementById('standardBase').value);
+            if (isNaN(TIER_CONFIG.Standard.basePriority)) TIER_CONFIG.Standard.basePriority = 0;
             TIER_CONFIG.Standard.multiplier = parseInt(document.getElementById('standardIncrease').value) || 6;
 
             // Recalculate all priority scores
