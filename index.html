@@ -308,6 +308,67 @@
             background: #059669;
         }
 
+        .scenario-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .scenario-panel h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .scenario-description {
+            background: #f0f9ff;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+            margin-bottom: 15px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #1e3a8a;
+        }
+
+        .scenario-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .scenario-progress {
+            background: #f9fafb;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 13px;
+            color: #666;
+            display: none;
+        }
+
+        .scenario-progress.active {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
         .summary-modal {
             display: none;
             position: fixed;
@@ -701,7 +762,7 @@
                 </div>
                 <div class="config-group">
                     <label>Diamond Score Increase</label>
-                    <input type="number" id="diamondIncrease" value="12" min="0" step="1">
+                    <input type="number" id="diamondIncrease" value="10" min="0" step="1">
                 </div>
 
                 <div class="config-group">
@@ -710,7 +771,7 @@
                 </div>
                 <div class="config-group">
                     <label>Gold Score Increase</label>
-                    <input type="number" id="goldIncrease" value="10" min="0" step="1">
+                    <input type="number" id="goldIncrease" value="9" min="0" step="1">
                 </div>
 
                 <div class="config-group">
@@ -728,13 +789,34 @@
                 </div>
                 <div class="config-group">
                     <label>Standard Score Increase</label>
-                    <input type="number" id="standardIncrease" value="6" min="0" step="1">
+                    <input type="number" id="standardIncrease" value="7" min="0" step="1">
+                </div>
+            </div>
+        </div>
+
+        <div class="scenario-panel">
+            <h3>🎬 Automated Simulation Scenarios</h3>
+            <div class="scenario-description">
+                <strong>Recommended Configuration for Balanced Prioritization:</strong><br>
+                • Diamond: Base 0, +10 per 10s | Gold: Base 0, +9 per 10s<br>
+                • Yellow: Base 0, +8 per 10s | Standard: Base 0, +7 per 10s<br>
+                <em>This creates a 30% advantage for Diamond over Standard while preventing starvation.</em>
+            </div>
+            <div class="scenario-buttons">
+                <button id="applyBalancedConfig" class="success">✅ Apply Balanced Config</button>
+                <button id="runBalancedScenario">▶️ Run Balanced Scenario</button>
+                <button id="stopScenarioBtn" class="danger" style="display: none;">⏹️ Stop Scenario</button>
+            </div>
+            <div class="scenario-progress" id="scenarioProgress">
+                <div id="scenarioStatus">Preparing simulation...</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
                 </div>
             </div>
         </div>
 
         <div class="add-customer-panel">
-            <h3>➕ Add Customer to Queue</h3>
+            <h3>➕ Manual Customer Addition</h3>
             <div class="add-customer-controls">
                 <select id="selectQueue">
                     <option value="Q1">Queue 1 (Q1) - Priority</option>
@@ -840,14 +922,14 @@
                 </div>
             </div>
             <div style="margin-top: 15px; padding: 15px; background: #ecfdf5; border-radius: 5px; border-left: 4px solid #10b981;">
-                <strong style="color: #059669;">🛡️ Starvation Prevention:</strong>
+                <strong style="color: #059669;">🛡️ Balanced Prioritization Strategy:</strong>
                 <div style="margin-top: 8px; font-size: 13px; color: #065f46;">
-                    Current settings balance priority with fairness:<br>
-                    • <strong>All tiers start equal</strong> (Base: 0) - No initial advantage<br>
-                    • <strong>Diamond gets faster priority growth</strong> (+12 per 10s vs Standard +6 per 10s)<br>
-                    • <strong>Lower tiers catch up over time</strong> - Longer wait = higher priority<br>
+                    Current settings (Recommended):<br>
+                    • <strong>All tiers start equal</strong> (Base: 0) - Fair starting point<br>
+                    • <strong>Diamond gets 30% faster growth</strong> (+10 per 10s vs Standard +7 per 10s)<br>
+                    • <strong>Gradual tier differences</strong> - Each tier is competitive with the next<br>
                     • <strong>Warning at 60s, Critical at 120s</strong> - Visual alerts prevent starvation<br>
-                    • Example: Diamond waiting 30s = 36 priority. Standard waiting 60s = 36 priority (equal!). Standard waiting longer will surpass Diamond.
+                    • <strong>Key Balance:</strong> Diamond waiting 30s = 30 priority. Standard waiting 43s = 30 priority. Standards catch up in 43% more time (not 2x or 3x), ensuring no starvation while respecting VIP status.
                 </div>
             </div>
         </div>
@@ -868,11 +950,12 @@
 
     <script>
         // Customer tier configuration - Balanced to prevent starvation
+        // 30% advantage for Diamond (10 vs 7) while preventing starvation
         let TIER_CONFIG = {
-            'Diamond': { multiplier: 12, basePriority: 0, class: 'diamond' },
-            'Gold': { multiplier: 10, basePriority: 0, class: 'gold' },
+            'Diamond': { multiplier: 10, basePriority: 0, class: 'diamond' },
+            'Gold': { multiplier: 9, basePriority: 0, class: 'gold' },
             'Yellow': { multiplier: 8, basePriority: 0, class: 'yellow' },
-            'Standard': { multiplier: 6, basePriority: 0, class: 'standard' }
+            'Standard': { multiplier: 7, basePriority: 0, class: 'standard' }
         };
 
         let TIME_INTERVAL = 10; // seconds
@@ -901,6 +984,9 @@
         let servedCustomers = [];
         let simulationStartTime = Date.now();
         let totalCustomersAdded = 0;
+        let scenarioRunning = false;
+        let scenarioTimeout = null;
+        let scenarioSteps = [];
 
         // Initialize with sample conversations
         function initializeConversations() {
@@ -1250,6 +1336,130 @@
             showSummary();
         }
 
+        function applyBalancedConfiguration() {
+            // Apply optimal balanced configuration
+            document.getElementById('timeInterval').value = 10;
+            document.getElementById('diamondBase').value = 0;
+            document.getElementById('diamondIncrease').value = 10;
+            document.getElementById('goldBase').value = 0;
+            document.getElementById('goldIncrease').value = 9;
+            document.getElementById('yellowBase').value = 0;
+            document.getElementById('yellowIncrease').value = 8;
+            document.getElementById('standardBase').value = 0;
+            document.getElementById('standardIncrease').value = 7;
+
+            applyConfiguration();
+            alert('✅ Balanced configuration applied!\n\nDiamond: +10/10s, Gold: +9/10s, Yellow: +8/10s, Standard: +7/10s\n\nThis creates a 30% priority advantage for Diamond while preventing starvation.');
+        }
+
+        function runBalancedScenario() {
+            if (scenarioRunning) return;
+
+            // Reset everything first
+            conversations = [];
+            conversationIdCounter = 1;
+            servedCustomers = [];
+            simulationStartTime = Date.now();
+            totalCustomersAdded = 0;
+            isPaused = false;
+            document.getElementById('pauseBtn').textContent = '⏸️ Pause Simulation';
+            document.getElementById('pauseBtn').style.background = '#f59e0b';
+            renderQueues();
+
+            // Apply balanced config
+            applyBalancedConfiguration();
+
+            scenarioRunning = true;
+            document.getElementById('scenarioProgress').classList.add('active');
+            document.getElementById('runBalancedScenario').style.display = 'none';
+            document.getElementById('stopScenarioBtn').style.display = 'inline-block';
+
+            // Define scenario timeline (time in seconds, tier, queue)
+            scenarioSteps = [
+                // Phase 1: Standard customers arrive first (0-20s)
+                { time: 0, tier: 'Standard', queue: 'Q1', message: 'Standard customer #1 arrives' },
+                { time: 5, tier: 'Standard', queue: 'Q1', message: 'Standard customer #2 arrives' },
+                { time: 10, tier: 'Standard', queue: 'Q2', message: 'Standard customer #3 arrives' },
+                { time: 15, tier: 'Yellow', queue: 'Q1', message: 'Yellow customer arrives' },
+
+                // Phase 2: Mix of tiers (20-40s)
+                { time: 20, tier: 'Gold', queue: 'Q1', message: 'Gold customer arrives' },
+                { time: 25, tier: 'Standard', queue: 'Q2', message: 'Standard customer #4 arrives' },
+                { time: 30, tier: 'Yellow', queue: 'Q2', message: 'Yellow customer #2 arrives' },
+
+                // Phase 3: Diamond customers arrive (40-60s) - they arrive LATE but should still get priority
+                { time: 40, tier: 'Diamond', queue: 'Q1', message: 'Diamond customer #1 arrives (late arrival)' },
+                { time: 45, tier: 'Standard', queue: 'Q1', message: 'Standard customer #5 arrives' },
+                { time: 50, tier: 'Diamond', queue: 'Q2', message: 'Diamond customer #2 arrives (late arrival)' },
+
+                // Phase 4: More mix to show balance (60-80s)
+                { time: 55, tier: 'Gold', queue: 'Q2', message: 'Gold customer #2 arrives' },
+                { time: 60, tier: 'Standard', queue: 'Q1', message: 'Standard customer #6 arrives' },
+                { time: 65, tier: 'Yellow', queue: 'Q1', message: 'Yellow customer #3 arrives' },
+                { time: 70, tier: 'Diamond', queue: 'Q1', message: 'Diamond customer #3 arrives' },
+                { time: 75, tier: 'Standard', queue: 'Q2', message: 'Standard customer #7 arrives' },
+
+                // Phase 5: Final wave (80-100s)
+                { time: 80, tier: 'Gold', queue: 'Q1', message: 'Gold customer #3 arrives' },
+                { time: 85, tier: 'Standard', queue: 'Q1', message: 'Standard customer #8 arrives' },
+                { time: 90, tier: 'Diamond', queue: 'Q2', message: 'Diamond customer #4 arrives' },
+                { time: 95, tier: 'Yellow', queue: 'Q2', message: 'Yellow customer #4 arrives' },
+
+                // End scenario
+                { time: 120, tier: null, queue: null, message: 'Scenario complete! Review results above.' }
+            ];
+
+            executeScenarioStep(0);
+        }
+
+        function executeScenarioStep(stepIndex) {
+            if (!scenarioRunning || stepIndex >= scenarioSteps.length) {
+                if (scenarioRunning) {
+                    completeScenario();
+                }
+                return;
+            }
+
+            const step = scenarioSteps[stepIndex];
+            const delay = stepIndex === 0 ? 0 : (scenarioSteps[stepIndex].time - scenarioSteps[stepIndex - 1].time) * 1000;
+
+            scenarioTimeout = setTimeout(() => {
+                if (!scenarioRunning) return;
+
+                // Update progress
+                const progress = Math.round((stepIndex / scenarioSteps.length) * 100);
+                document.getElementById('progressFill').style.width = progress + '%';
+                document.getElementById('scenarioStatus').textContent = step.message;
+
+                // Add customer if not the end step
+                if (step.tier && step.queue) {
+                    addConversation(step.queue, step.tier, false);
+                }
+
+                // Move to next step
+                executeScenarioStep(stepIndex + 1);
+            }, delay);
+        }
+
+        function completeScenario() {
+            scenarioRunning = false;
+            document.getElementById('progressFill').style.width = '100%';
+            document.getElementById('scenarioStatus').innerHTML = '<strong>✅ Scenario Complete!</strong> Let simulation run for 60 more seconds, then click "Stop & Show Summary" to analyze results.';
+            document.getElementById('runBalancedScenario').style.display = 'inline-block';
+            document.getElementById('stopScenarioBtn').style.display = 'none';
+        }
+
+        function stopScenario() {
+            scenarioRunning = false;
+            if (scenarioTimeout) {
+                clearTimeout(scenarioTimeout);
+            }
+            document.getElementById('scenarioProgress').classList.remove('active');
+            document.getElementById('runBalancedScenario').style.display = 'inline-block';
+            document.getElementById('stopScenarioBtn').style.display = 'none';
+            document.getElementById('progressFill').style.width = '0%';
+        }
+
         function renderQueues() {
             const queues = { Q1: [], Q2: [], Q3: [] };
 
@@ -1329,11 +1539,11 @@
             // Update tier configurations
             TIER_CONFIG.Diamond.basePriority = parseInt(document.getElementById('diamondBase').value);
             if (isNaN(TIER_CONFIG.Diamond.basePriority)) TIER_CONFIG.Diamond.basePriority = 0;
-            TIER_CONFIG.Diamond.multiplier = parseInt(document.getElementById('diamondIncrease').value) || 12;
+            TIER_CONFIG.Diamond.multiplier = parseInt(document.getElementById('diamondIncrease').value) || 10;
 
             TIER_CONFIG.Gold.basePriority = parseInt(document.getElementById('goldBase').value);
             if (isNaN(TIER_CONFIG.Gold.basePriority)) TIER_CONFIG.Gold.basePriority = 0;
-            TIER_CONFIG.Gold.multiplier = parseInt(document.getElementById('goldIncrease').value) || 10;
+            TIER_CONFIG.Gold.multiplier = parseInt(document.getElementById('goldIncrease').value) || 9;
 
             TIER_CONFIG.Yellow.basePriority = parseInt(document.getElementById('yellowBase').value);
             if (isNaN(TIER_CONFIG.Yellow.basePriority)) TIER_CONFIG.Yellow.basePriority = 0;
@@ -1341,7 +1551,7 @@
 
             TIER_CONFIG.Standard.basePriority = parseInt(document.getElementById('standardBase').value);
             if (isNaN(TIER_CONFIG.Standard.basePriority)) TIER_CONFIG.Standard.basePriority = 0;
-            TIER_CONFIG.Standard.multiplier = parseInt(document.getElementById('standardIncrease').value) || 6;
+            TIER_CONFIG.Standard.multiplier = parseInt(document.getElementById('standardIncrease').value) || 7;
 
             // Recalculate all priority scores
             conversations.forEach(conv => {
@@ -1428,6 +1638,18 @@
 
         document.getElementById('closeSummaryBtn').addEventListener('click', function() {
             closeSummary();
+        });
+
+        document.getElementById('applyBalancedConfig').addEventListener('click', function() {
+            applyBalancedConfiguration();
+        });
+
+        document.getElementById('runBalancedScenario').addEventListener('click', function() {
+            runBalancedScenario();
+        });
+
+        document.getElementById('stopScenarioBtn').addEventListener('click', function() {
+            stopScenario();
         });
 
         // Start simulation
