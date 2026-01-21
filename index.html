@@ -749,7 +749,9 @@
         <div class="config-panel">
             <h3>⚙️ Configuration Settings</h3>
             <div style="background: #eff6ff; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 13px; border-left: 3px solid #3b82f6;">
-                <strong>💡 How to use:</strong> You can manually adjust any values below and click "Apply Custom Config" in the Automated Simulation Scenarios section, or use one of the preset configurations.
+                <strong>💡 How to use:</strong> You can manually adjust any values below and click "Apply Custom Config" in the Automated Simulation Scenarios section, or use one of the preset configurations.<br>
+                <strong>⚠️ Important:</strong> After changing values, you MUST click a config button (or "Apply Custom Config") before clicking "Run Simulation". Check the "Active Configuration" display to verify your settings are applied.<br>
+                <em>Examples: Time Interval 30s + Assignment 120s = Very slow processing. Time Interval 10s + Assignment 5s = Very fast processing.</em>
             </div>
             <div class="config-grid">
                 <div class="config-group">
@@ -810,7 +812,7 @@
                 • <strong>Diamond customers arrive late</strong> (40s+) but should still get priority<br>
                 • <strong>All 22 customers go to Q1</strong> for easy visualization<br>
                 <em>Goal: Showcase Diamond priority power while minimizing starvation!</em><br>
-                <strong style="color: #f59e0b;">⚠️ First select a config below, then click Run Simulation!</strong>
+                <strong style="color: #f59e0b;">⚠️ IMPORTANT: Click a config button below (or Apply Custom Config) BEFORE clicking Run Simulation!</strong>
             </div>
             <div class="scenario-buttons">
                 <button id="applyBalancedConfig" class="success">✅ Config: Strong Priority (15,11,7,5)</button>
@@ -862,6 +864,17 @@
 
         <div class="agent-assignment" id="agentAssignment">
             🤖 Auto-assigning top customers to agents every <span id="assignmentIntervalDisplay">10</span> seconds...
+        </div>
+
+        <div style="background: #f0f9ff; padding: 12px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3b82f6; font-size: 13px;">
+            <strong>📋 Active Configuration:</strong>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 8px;">
+                <div>Diamond: <strong>+<span id="activeDiamond">15</span>/<span id="activeInterval">10</span>s</strong></div>
+                <div>Gold: <strong>+<span id="activeGold">11</span>/<span id="activeInterval2">10</span>s</strong></div>
+                <div>Yellow: <strong>+<span id="activeYellow">9</span>/<span id="activeInterval3">10</span>s</strong></div>
+                <div>Standard: <strong>+<span id="activeStandard">8</span>/<span id="activeInterval4">10</span>s</strong></div>
+                <div>Assignment: <strong><span id="activeAssignment">10</span>s</strong></div>
+            </div>
         </div>
 
         <div class="stats-panel">
@@ -1630,6 +1643,17 @@
                 }
             });
 
+            // Update active configuration display
+            document.getElementById('activeDiamond').textContent = TIER_CONFIG.Diamond.multiplier;
+            document.getElementById('activeGold').textContent = TIER_CONFIG.Gold.multiplier;
+            document.getElementById('activeYellow').textContent = TIER_CONFIG.Yellow.multiplier;
+            document.getElementById('activeStandard').textContent = TIER_CONFIG.Standard.multiplier;
+            document.getElementById('activeInterval').textContent = TIME_INTERVAL;
+            document.getElementById('activeInterval2').textContent = TIME_INTERVAL;
+            document.getElementById('activeInterval3').textContent = TIME_INTERVAL;
+            document.getElementById('activeInterval4').textContent = TIME_INTERVAL;
+            document.getElementById('activeAssignment').textContent = AGENT_ASSIGNMENT_INTERVAL;
+
             // Update legend
             updateLegend();
             renderQueues();
@@ -1729,6 +1753,18 @@
         // Start simulation
         initializeConversations();
         updateLegend();
+
+        // Update active configuration display on load
+        document.getElementById('activeDiamond').textContent = TIER_CONFIG.Diamond.multiplier;
+        document.getElementById('activeGold').textContent = TIER_CONFIG.Gold.multiplier;
+        document.getElementById('activeYellow').textContent = TIER_CONFIG.Yellow.multiplier;
+        document.getElementById('activeStandard').textContent = TIER_CONFIG.Standard.multiplier;
+        document.getElementById('activeInterval').textContent = TIME_INTERVAL;
+        document.getElementById('activeInterval2').textContent = TIME_INTERVAL;
+        document.getElementById('activeInterval3').textContent = TIME_INTERVAL;
+        document.getElementById('activeInterval4').textContent = TIME_INTERVAL;
+        document.getElementById('activeAssignment').textContent = AGENT_ASSIGNMENT_INTERVAL;
+
         simulationInterval = setInterval(updateConversations, 1000);
         agentAssignmentInterval = setInterval(assignToAgent, AGENT_ASSIGNMENT_INTERVAL * 1000); // Assign customers using configurable interval
     </script>
